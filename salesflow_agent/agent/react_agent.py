@@ -29,7 +29,7 @@ Always be concise and professional. Format financial data with dollar signs and 
 class SalesFlowAgent:
     """ReACT agent that uses MCP tools and RAG retrieval for sales assistance."""
 
-    def __init__(self, tools: list[StructuredTool], model_name: str = "claude-sonnet-4-20250514"):
+    def __init__(self, tools: list[StructuredTool], model_name: str = "claude-3-5-sonnet-20240620"):
         self.llm = ChatAnthropic(model=model_name, temperature=0)
         self.tools = tools
         self.agent = create_react_agent(

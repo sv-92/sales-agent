@@ -9,7 +9,7 @@ from fastmcp import FastMCP
 DATA_DIR = Path(__file__).resolve().parent.parent.parent / "data"
 DB_PATH = DATA_DIR / "crm.db"
 
-mcp = FastMCP("SalesFlow CRM", description="Mock CRM tools for sales agent demo")
+mcp = FastMCP("SalesFlow CRM")
 
 
 def _get_db() -> sqlite3.Connection:
