@@ -91,6 +91,27 @@ async def query_agent(request: QueryRequest) -> QueryResponse:
     )
 
 
+@app.get("/tools")
+async def list_tools():
+    """List all MCP tools discovered by the agent."""
+    if agent is None:
+        return {"tools": [], "count": 0, "status": "agent_not_initialized"}
+    
+    tool_details = [
+        {
+            "name": tool.name,
+            "description": tool.description,
+        }
+        for tool in agent.tools
+    ]
+    return {
+        "tools": tool_details,
+        "count": len(tool_details),
+        "status": "ready",
+        "mcp_server": f"http://localhost:{os.environ.get('MCP_SERVER_PORT', '8001')}",
+    }
+
+
 @app.get("/health")
 async def health():
     """Health check endpoint."""
