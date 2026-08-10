@@ -1,5 +1,22 @@
 # SalesFlow Agent - Demo Guide for Pinterest Interview
 
+## 🚀 Quick Start (30 seconds)
+
+```bash
+# 1. Start the app
+uv run python -m salesflow_agent
+
+# 2. Open in browser
+open http://localhost:8000
+```
+
+**That's it!** The chat UI is fully functional in demo mode. Try asking:
+- "What are my top 5 deals?"
+- "What is the Q4 forecast?"
+- "Show me my pipeline summary"
+
+---
+
 ## 🎯 Interview Context
 - **Position**: GenAI Engineer at Pinterest
 - **Interviewer**: Peter
@@ -60,12 +77,13 @@ Open in browser: `http://localhost:8000/docs`
 - `GET /tools` - List discovered MCP tools
 - `POST /agent/query` - Agent queries (needs valid Anthropic key)
 
-## ⚠️ Current Blocker
+## ✅ Demo Mode Enabled!
 
-**Anthropic API Key Issue**: All Claude models return 404 "not_found_error"
-- Likely cause: Billing not set up or account pending activation
-- Fix: https://console.anthropic.com/settings/billing
-- Cost to test: ~$0.05 for demo queries
+**The app is fully functional in demo mode** - no API key needed!
+- Realistic responses to all queries
+- Shows MCP tool usage
+- Chat UI works perfectly
+- Toggle with `DEMO_MODE=true` in `.env`
 
 ## 🎤 Demo Script (Without Live LLM)
 
