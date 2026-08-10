@@ -1,0 +1,28 @@
+[project]
+name = "salesflow-agent"
+version = "0.1.0"
+description = "GenAI Sales Agent demonstrating ReACT, RAG, MCP, and Workflow orchestration"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn>=0.32.0",
+    "langchain>=0.3.27",
+    "langchain-anthropic>=0.3.9",
+    "langchain-community>=0.3.0",
+    "langchain-openai>=0.3.0",
+    "langgraph>=0.2.62",
+    "faiss-cpu>=1.9.0",
+    "fastmcp>=2.14.0",
+    "pyzeebe>=4.5.0",
+    "sqlalchemy>=2.0.36",
+    "pydantic>=2.10.5",
+    "python-dotenv>=1.0.0",
+    "httpx>=0.27.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["salesflow_agent"]

@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+.env
+data/crm.db
+data/faiss_index/
+.venv/
+venv/
+.pytest_cache/

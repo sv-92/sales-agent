@@ -79,40 +79,49 @@
 
 ### Latest Handoff
 **Date**: 2026-08-10
-**From**: Personal Copilot
-**Status**: Ready for Walmart Copilot to start story creation
+**From**: Walmart Copilot
+**Status**: Full implementation complete — ready for testing on Personal Copilot
 
-**Completed So Far**:
-- ✅ BMad Method installed and configured
-- ✅ Planning artifacts created (PRD, Architecture, Epics-Stories)
-- ✅ 4 story files created (Stories 1-4)
-- ✅ All changes pushed to GitHub
+**Completed This Session**:
+- ✅ Created remaining story files (Stories 5-10)
+- ✅ Implemented Epic 1: Agent Core (FastAPI + LangChain ReACT Agent)
+- ✅ Implemented Epic 2: RAG Knowledge Base (FAISS + 6 knowledge documents)
+- ✅ Implemented Epic 3: MCP CRM Discovery (FastMCP server + dynamic tool discovery)
+- ✅ Implemented Epic 4: Workflow Orchestration (Zeebe client + enrichment/scoring workers)
+- ✅ Implemented Epic 5: Local Developer Experience (entry point, seed data, README, docker-compose)
+- ✅ All 3 user journeys implemented (Pipeline Query, Objection Handling, Lead Qualification)
 
-**Next Steps for Walmart Copilot**:
-1. Create remaining story files (Stories 5-10) using `bmad-create-story`
-2. Start implementation of Epic 1 (Agent Core) using created stories
-3. Implement Epic 3 (MCP CRM Discovery) 
-4. Implement Epic 2 (RAG Knowledge Base) - can run in parallel
-5. Document any code that needs testing in handoff notes
+**For Personal Copilot**:
+1. `pip install -e .` (or `uv sync`) — install dependencies
+2. Copy `.env.example` to `.env` and add API keys (ANTHROPIC_API_KEY, OPENAI_API_KEY)
+3. Run `python -m salesflow_agent` — starts MCP server + FastAPI app
+4. Test endpoints:
+   - `POST /agent/query` with `{"message": "What are my top 5 deals?"}`
+   - `POST /agent/query` with `{"message": "How do I handle pricing objections?"}`
+   - `POST /leads/qualify` with `{"company_name": "Acme Corp", "industry": "Technology"}`
+5. Fix any import/runtime errors
+6. Optional: `docker-compose up -d` for Zeebe workflow (not required — app falls back gracefully)
 
-**Files to Review Before Starting**:
-- `docs/README.md` - Full project context
-- `docs/satwik-resume.md` - Background on Satwik's experience
-- `_bmad-output/planning-artifacts/salesflow-agent-prd.md` - Product requirements
-- `_bmad-output/planning-artifacts/salesflow-agent-architecture.md` - Technical design
-- `_bmad-output/planning-artifacts/salesflow-agent-epics-stories.md` - Work breakdown
+**Known Uncertainties (Needs Testing)**:
+- FastMCP `streamable-http` transport may need URL path adjustment
+- `langchain-openai` embeddings require OPENAI_API_KEY (could switch to Anthropic embeddings)
+- pyzeebe connection handling when Zeebe is not running
+- FAISS index rebuild on first run timing
 
-**Story Creation Remaining**:
-- Story 5: Build Embeddings Index (Epic 2)
-- Story 6: Workflow Start Endpoint (Epic 4)
-- Story 7: RAG Enrichment Worker (Epic 4)
-- Story 8: LLM Scoring Worker (Epic 4)
-- Story 9: Local Startup Scripts (Epic 5)
-- Story 10: Demo Fixtures (Epic 5)
+**Files Changed**:
+- `pyproject.toml` — project config and dependencies
+- `README.md` — project documentation
+- `.env.example` — environment template
+- `.gitignore` — ignore patterns
+- `docker-compose.yml` — Zeebe setup
+- `data/seed_data.sql` — mock CRM data (deals, accounts, contacts, forecasts, leads)
+- `data/knowledge/*.md` — 6 sales playbook documents
+- `salesflow_agent/` — entire Python package (14 source files)
+- `_bmad-output/implementation-artifacts/` — 6 new story files (Stories 5-10)
 
 ---
 
-## Handoff Log
+### Previous Handoff
 
 ### [2026-08-10] Personal → Walmart
 **Completed**:
