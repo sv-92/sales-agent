@@ -1,0 +1,426 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" 
+                  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" 
+                  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" 
+                  xmlns:di="http://www.omg.org/spec/DD/20100524/DI" 
+                  xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" 
+                  xmlns:modeler="http://camunda.org/schema/modeler/1.0" 
+                  id="Definitions_1" 
+                  targetNamespace="http://bpmn.io/schema/bpmn" 
+                  modeler:executionPlatform="Camunda Cloud" 
+                  modeler:executionPlatformVersion="8.5.0">
+  
+  <bpmn:process id="lead-qualification" name="Lead Qualification Workflow" isExecutable="true">
+    
+    <!-- Start Event -->
+    <bpmn:startEvent id="StartEvent_1" name="New Lead Received">
+      <bpmn:outgoing>Flow_1</bpmn:outgoing>
+    </bpmn:startEvent>
+    
+    <!-- Service Task 1: Validate Lead Data -->
+    <bpmn:serviceTask id="Task_ValidateLead" name="Validate Lead Data">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="validate_lead" />
+        <zeebe:ioMapping>
+          <zeebe:input source="=company_name" target="company_name" />
+          <zeebe:input source="=industry" target="industry" />
+          <zeebe:input source="=contact_name" target="contact_name" />
+          <zeebe:output source="=validation_status" target="validation_status" />
+        </zeebe:ioMapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1</bpmn:incoming>
+      <bpmn:outgoing>Flow_2</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <!-- Exclusive Gateway: Check Validation -->
+    <bpmn:exclusiveGateway id="Gateway_CheckValidation" name="Valid Lead?">
+      <bpmn:incoming>Flow_2</bpmn:incoming>
+      <bpmn:outgoing>Flow_Valid</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Invalid</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    
+    <!-- Service Task 2: CRM Lookup -->
+    <bpmn:serviceTask id="Task_CRMLookup" name="Check CRM for Existing Account">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="crm_lookup" />
+        <zeebe:ioMapping>
+          <zeebe:input source="=company_name" target="company_name" />
+          <zeebe:output source="=existing_account" target="existing_account" />
+          <zeebe:output source="=account_id" target="account_id" />
+        </zeebe:ioMapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Valid</bpmn:incoming>
+      <bpmn:outgoing>Flow_3</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <!-- Service Task 3: RAG Enrichment -->
+    <bpmn:serviceTask id="Task_EnrichLead" name="Enrich Lead with Knowledge Base">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="enrich_lead" />
+        <zeebe:ioMapping>
+          <zeebe:input source="=company_name" target="company_name" />
+          <zeebe:input source="=industry" target="industry" />
+          <zeebe:output source="=enrichment_text" target="enrichment_text" />
+          <zeebe:output source="=relevant_products" target="relevant_products" />
+          <zeebe:output source="=pricing_guidance" target="pricing_guidance" />
+        </zeebe:ioMapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_3</bpmn:incoming>
+      <bpmn:outgoing>Flow_4</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <!-- Service Task 4: External API - Company Data Enrichment -->
+    <bpmn:serviceTask id="Task_ExternalEnrich" name="Fetch Company Data (External API)">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="external_api_enrich" />
+        <zeebe:ioMapping>
+          <zeebe:input source="=company_name" target="company_name" />
+          <zeebe:output source="=company_size" target="company_size" />
+          <zeebe:output source="=annual_revenue" target="annual_revenue" />
+          <zeebe:output source="=employee_count" target="employee_count" />
+        </zeebe:ioMapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_4</bpmn:incoming>
+      <bpmn:outgoing>Flow_5</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <!-- Service Task 5: LLM Scoring -->
+    <bpmn:serviceTask id="Task_ScoreLead" name="Score Lead with AI (Claude)">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="score_lead" />
+        <zeebe:ioMapping>
+          <zeebe:input source="=company_name" target="company_name" />
+          <zeebe:input source="=industry" target="industry" />
+          <zeebe:input source="=enrichment_text" target="enrichment_text" />
+          <zeebe:input source="=company_size" target="company_size" />
+          <zeebe:input source="=annual_revenue" target="annual_revenue" />
+          <zeebe:output source="=lead_score" target="lead_score" />
+          <zeebe:output source="=score_reasoning" target="score_reasoning" />
+          <zeebe:output source="=route_decision" target="route_decision" />
+        </zeebe:ioMapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_5</bpmn:incoming>
+      <bpmn:outgoing>Flow_6</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <!-- Exclusive Gateway: Route Based on Score -->
+    <bpmn:exclusiveGateway id="Gateway_RouteDecision" name="Route by Score">
+      <bpmn:incoming>Flow_6</bpmn:incoming>
+      <bpmn:outgoing>Flow_HighScore</bpmn:outgoing>
+      <bpmn:outgoing>Flow_MediumScore</bpmn:outgoing>
+      <bpmn:outgoing>Flow_LowScore</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    
+    <!-- Service Task 6a: Assign to Sales -->
+    <bpmn:serviceTask id="Task_AssignToSales" name="Assign to Sales Team">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="assign_to_sales" />
+        <zeebe:ioMapping>
+          <zeebe:input source="=company_name" target="company_name" />
+          <zeebe:input source="=lead_score" target="lead_score" />
+          <zeebe:output source="=assigned_rep" target="assigned_rep" />
+          <zeebe:output source="=sales_queue" target="sales_queue" />
+        </zeebe:ioMapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_HighScore</bpmn:incoming>
+      <bpmn:outgoing>Flow_7a</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <!-- Service Task 6b: Add to Nurture Campaign -->
+    <bpmn:serviceTask id="Task_AddToNurture" name="Add to Nurture Campaign">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="add_to_nurture" />
+        <zeebe:ioMapping>
+          <zeebe:input source="=company_name" target="company_name" />
+          <zeebe:input source="=contact_name" target="contact_name" />
+          <zeebe:output source="=campaign_id" target="campaign_id" />
+          <zeebe:output source="=nurture_stage" target="nurture_stage" />
+        </zeebe:ioMapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_MediumScore</bpmn:incoming>
+      <bpmn:outgoing>Flow_7b</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <!-- Service Task 6c: Mark as Disqualified -->
+    <bpmn:serviceTask id="Task_Disqualify" name="Mark as Disqualified">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="disqualify_lead" />
+        <zeebe:ioMapping>
+          <zeebe:input source="=company_name" target="company_name" />
+          <zeebe:input source="=score_reasoning" target="score_reasoning" />
+          <zeebe:output source="=disqualification_reason" target="disqualification_reason" />
+        </zeebe:ioMapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_LowScore</bpmn:incoming>
+      <bpmn:outgoing>Flow_7c</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <!-- Service Task 7: Update CRM -->
+    <bpmn:serviceTask id="Task_UpdateCRM" name="Update CRM with Results">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="update_crm" />
+        <zeebe:ioMapping>
+          <zeebe:input source="=company_name" target="company_name" />
+          <zeebe:input source="=lead_score" target="lead_score" />
+          <zeebe:input source="=route_decision" target="route_decision" />
+          <zeebe:output source="=crm_updated" target="crm_updated" />
+        </zeebe:ioMapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_7a</bpmn:incoming>
+      <bpmn:incoming>Flow_7b</bpmn:incoming>
+      <bpmn:incoming>Flow_7c</bpmn:incoming>
+      <bpmn:outgoing>Flow_8</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <!-- Service Task 8: Send Notification -->
+    <bpmn:serviceTask id="Task_SendNotification" name="Send Notification Email">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="send_notification" />
+        <zeebe:ioMapping>
+          <zeebe:input source="=company_name" target="company_name" />
+          <zeebe:input source="=route_decision" target="route_decision" />
+          <zeebe:input source="=assigned_rep" target="assigned_rep" />
+        </zeebe:ioMapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_8</bpmn:incoming>
+      <bpmn:outgoing>Flow_9</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <!-- End Event: Success -->
+    <bpmn:endEvent id="EndEvent_Success" name="Lead Qualified">
+      <bpmn:incoming>Flow_9</bpmn:incoming>
+    </bpmn:endEvent>
+    
+    <!-- End Event: Invalid Lead -->
+    <bpmn:endEvent id="EndEvent_Invalid" name="Lead Rejected">
+      <bpmn:incoming>Flow_Invalid</bpmn:incoming>
+    </bpmn:endEvent>
+    
+    <!-- Sequence Flows -->
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="StartEvent_1" targetRef="Task_ValidateLead" />
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="Task_ValidateLead" targetRef="Gateway_CheckValidation" />
+    <bpmn:sequenceFlow id="Flow_Valid" name="Yes" sourceRef="Gateway_CheckValidation" targetRef="Task_CRMLookup">
+      <bpmn:conditionExpression>=validation_status = "valid"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Invalid" name="No" sourceRef="Gateway_CheckValidation" targetRef="EndEvent_Invalid">
+      <bpmn:conditionExpression>=validation_status = "invalid"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_3" sourceRef="Task_CRMLookup" targetRef="Task_EnrichLead" />
+    <bpmn:sequenceFlow id="Flow_4" sourceRef="Task_EnrichLead" targetRef="Task_ExternalEnrich" />
+    <bpmn:sequenceFlow id="Flow_5" sourceRef="Task_ExternalEnrich" targetRef="Task_ScoreLead" />
+    <bpmn:sequenceFlow id="Flow_6" sourceRef="Task_ScoreLead" targetRef="Gateway_RouteDecision" />
+    <bpmn:sequenceFlow id="Flow_HighScore" name="Score ≥ 70&#10;(Sales)" sourceRef="Gateway_RouteDecision" targetRef="Task_AssignToSales">
+      <bpmn:conditionExpression>=lead_score &gt;= 70</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_MediumScore" name="Score 40-69&#10;(Nurture)" sourceRef="Gateway_RouteDecision" targetRef="Task_AddToNurture">
+      <bpmn:conditionExpression>=lead_score &gt;= 40 and lead_score &lt; 70</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_LowScore" name="Score &lt; 40&#10;(Disqualified)" sourceRef="Gateway_RouteDecision" targetRef="Task_Disqualify">
+      <bpmn:conditionExpression>=lead_score &lt; 40</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_7a" sourceRef="Task_AssignToSales" targetRef="Task_UpdateCRM" />
+    <bpmn:sequenceFlow id="Flow_7b" sourceRef="Task_AddToNurture" targetRef="Task_UpdateCRM" />
+    <bpmn:sequenceFlow id="Flow_7c" sourceRef="Task_Disqualify" targetRef="Task_UpdateCRM" />
+    <bpmn:sequenceFlow id="Flow_8" sourceRef="Task_UpdateCRM" targetRef="Task_SendNotification" />
+    <bpmn:sequenceFlow id="Flow_9" sourceRef="Task_SendNotification" targetRef="EndEvent_Success" />
+  
+  </bpmn:process>
+  
+  <!-- BPMN Diagram (Visual Layout) -->
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="lead-qualification">
+      
+      <!-- Start Event -->
+      <bpmndi:BPMNShape id="StartEvent_1_di" bpmnElement="StartEvent_1">
+        <dc:Bounds x="162" y="212" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="154" y="255" width="53" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      
+      <!-- Validate Lead -->
+      <bpmndi:BPMNShape id="Task_ValidateLead_di" bpmnElement="Task_ValidateLead">
+        <dc:Bounds x="250" y="190" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      
+      <!-- Gateway: Check Validation -->
+      <bpmndi:BPMNShape id="Gateway_CheckValidation_di" bpmnElement="Gateway_CheckValidation" isMarkerVisible="true">
+        <dc:Bounds x="405" y="205" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="399" y="175" width="62" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      
+      <!-- CRM Lookup -->
+      <bpmndi:BPMNShape id="Task_CRMLookup_di" bpmnElement="Task_CRMLookup">
+        <dc:Bounds x="510" y="190" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      
+      <!-- RAG Enrichment -->
+      <bpmndi:BPMNShape id="Task_EnrichLead_di" bpmnElement="Task_EnrichLead">
+        <dc:Bounds x="670" y="190" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      
+      <!-- External API -->
+      <bpmndi:BPMNShape id="Task_ExternalEnrich_di" bpmnElement="Task_ExternalEnrich">
+        <dc:Bounds x="830" y="190" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      
+      <!-- LLM Scoring -->
+      <bpmndi:BPMNShape id="Task_ScoreLead_di" bpmnElement="Task_ScoreLead">
+        <dc:Bounds x="990" y="190" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      
+      <!-- Gateway: Route Decision -->
+      <bpmndi:BPMNShape id="Gateway_RouteDecision_di" bpmnElement="Gateway_RouteDecision" isMarkerVisible="true">
+        <dc:Bounds x="1145" y="205" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1128" y="175" width="84" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      
+      <!-- Assign to Sales -->
+      <bpmndi:BPMNShape id="Task_AssignToSales_di" bpmnElement="Task_AssignToSales">
+        <dc:Bounds x="1250" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      
+      <!-- Add to Nurture -->
+      <bpmndi:BPMNShape id="Task_AddToNurture_di" bpmnElement="Task_AddToNurture">
+        <dc:Bounds x="1250" y="190" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      
+      <!-- Disqualify -->
+      <bpmndi:BPMNShape id="Task_Disqualify_di" bpmnElement="Task_Disqualify">
+        <dc:Bounds x="1250" y="300" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      
+      <!-- Update CRM -->
+      <bpmndi:BPMNShape id="Task_UpdateCRM_di" bpmnElement="Task_UpdateCRM">
+        <dc:Bounds x="1410" y="190" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      
+      <!-- Send Notification -->
+      <bpmndi:BPMNShape id="Task_SendNotification_di" bpmnElement="Task_SendNotification">
+        <dc:Bounds x="1570" y="190" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      
+      <!-- End Event: Success -->
+      <bpmndi:BPMNShape id="EndEvent_Success_di" bpmnElement="EndEvent_Success">
+        <dc:Bounds x="1732" y="212" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1713" y="255" width="75" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      
+      <!-- End Event: Invalid -->
+      <bpmndi:BPMNShape id="EndEvent_Invalid_di" bpmnElement="EndEvent_Invalid">
+        <dc:Bounds x="412" y="342" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="395" y="385" width="71" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      
+      <!-- Edges -->
+      <bpmndi:BPMNEdge id="Flow_1_di" bpmnElement="Flow_1">
+        <di:waypoint x="198" y="230" />
+        <di:waypoint x="250" y="230" />
+      </bpmndi:BPMNEdge>
+      
+      <bpmndi:BPMNEdge id="Flow_2_di" bpmnElement="Flow_2">
+        <di:waypoint x="350" y="230" />
+        <di:waypoint x="405" y="230" />
+      </bpmndi:BPMNEdge>
+      
+      <bpmndi:BPMNEdge id="Flow_Valid_di" bpmnElement="Flow_Valid">
+        <di:waypoint x="455" y="230" />
+        <di:waypoint x="510" y="230" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="474" y="212" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      
+      <bpmndi:BPMNEdge id="Flow_Invalid_di" bpmnElement="Flow_Invalid">
+        <di:waypoint x="430" y="255" />
+        <di:waypoint x="430" y="342" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="438" y="296" width="15" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      
+      <bpmndi:BPMNEdge id="Flow_3_di" bpmnElement="Flow_3">
+        <di:waypoint x="610" y="230" />
+        <di:waypoint x="670" y="230" />
+      </bpmndi:BPMNEdge>
+      
+      <bpmndi:BPMNEdge id="Flow_4_di" bpmnElement="Flow_4">
+        <di:waypoint x="770" y="230" />
+        <di:waypoint x="830" y="230" />
+      </bpmndi:BPMNEdge>
+      
+      <bpmndi:BPMNEdge id="Flow_5_di" bpmnElement="Flow_5">
+        <di:waypoint x="930" y="230" />
+        <di:waypoint x="990" y="230" />
+      </bpmndi:BPMNEdge>
+      
+      <bpmndi:BPMNEdge id="Flow_6_di" bpmnElement="Flow_6">
+        <di:waypoint x="1090" y="230" />
+        <di:waypoint x="1145" y="230" />
+      </bpmndi:BPMNEdge>
+      
+      <bpmndi:BPMNEdge id="Flow_HighScore_di" bpmnElement="Flow_HighScore">
+        <di:waypoint x="1170" y="205" />
+        <di:waypoint x="1170" y="120" />
+        <di:waypoint x="1250" y="120" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1164" y="147" width="63" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      
+      <bpmndi:BPMNEdge id="Flow_MediumScore_di" bpmnElement="Flow_MediumScore">
+        <di:waypoint x="1195" y="230" />
+        <di:waypoint x="1250" y="230" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1194" y="196" width="63" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      
+      <bpmndi:BPMNEdge id="Flow_LowScore_di" bpmnElement="Flow_LowScore">
+        <di:waypoint x="1170" y="255" />
+        <di:waypoint x="1170" y="340" />
+        <di:waypoint x="1250" y="340" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1162" y="289" width="76" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      
+      <bpmndi:BPMNEdge id="Flow_7a_di" bpmnElement="Flow_7a">
+        <di:waypoint x="1350" y="120" />
+        <di:waypoint x="1460" y="120" />
+        <di:waypoint x="1460" y="190" />
+      </bpmndi:BPMNEdge>
+      
+      <bpmndi:BPMNEdge id="Flow_7b_di" bpmnElement="Flow_7b">
+        <di:waypoint x="1350" y="230" />
+        <di:waypoint x="1410" y="230" />
+      </bpmndi:BPMNEdge>
+      
+      <bpmndi:BPMNEdge id="Flow_7c_di" bpmnElement="Flow_7c">
+        <di:waypoint x="1350" y="340" />
+        <di:waypoint x="1460" y="340" />
+        <di:waypoint x="1460" y="270" />
+      </bpmndi:BPMNEdge>
+      
+      <bpmndi:BPMNEdge id="Flow_8_di" bpmnElement="Flow_8">
+        <di:waypoint x="1510" y="230" />
+        <di:waypoint x="1570" y="230" />
+      </bpmndi:BPMNEdge>
+      
+      <bpmndi:BPMNEdge id="Flow_9_di" bpmnElement="Flow_9">
+        <di:waypoint x="1670" y="230" />
+        <di:waypoint x="1732" y="230" />
+      </bpmndi:BPMNEdge>
+      
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+  
+</bpmn:definitions>
