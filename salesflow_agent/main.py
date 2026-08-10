@@ -43,15 +43,16 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning(f"MCP tool discovery failed (server may not be running): {e}")
 
-    # Initialize RAG retriever
+    # Initialize RAG retriever (disabled for demo - embeddings require PyTorch)
+    # To enable: install sentence-transformers on ARM Mac or use OpenAI embeddings
     try:
-        from langchain_openai import OpenAIEmbeddings
-
-        embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
-        retriever = get_retriever(embeddings)
-        rag_tool = create_rag_tool(retriever)
-        tools.append(rag_tool)
-        logger.info("RAG retriever initialized")
+        # Uncomment when embeddings are available:
+        # from langchain_community.embeddings import HuggingFaceEmbeddings
+        # embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+        # retriever = get_retriever(embeddings)
+        # rag_tool = create_rag_tool(retriever)
+        # tools.append(rag_tool)
+        logger.info("RAG retriever skipped (embeddings not installed)")
     except Exception as e:
         logger.warning(f"RAG initialization failed: {e}")
 

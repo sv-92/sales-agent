@@ -32,7 +32,7 @@ def main():
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
         )
-        time.sleep(2)  # Give MCP server time to start
+        time.sleep(5)  # Give MCP server time to start
 
         if mcp_process.poll() is not None:
             stderr = mcp_process.stderr.read().decode() if mcp_process.stderr else ""
