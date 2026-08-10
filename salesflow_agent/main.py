@@ -10,6 +10,7 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse
 
 from salesflow_agent.agent.react_agent import SalesFlowAgent
+from salesflow_agent.agent.demo_mode import DemoAgent
 from salesflow_agent.agent.tools import create_rag_tool
 from salesflow_agent.mcp.client import MCPClientWrapper
 from salesflow_agent.models.schemas import LeadRequest, LeadResponse, QueryRequest, QueryResponse
@@ -58,9 +59,21 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning(f"RAG initialization failed: {e}")
 
-    # Create agent
-    agent = SalesFlowAgent(tools=tools)
-    logger.info("SalesFlow Agent ready")
+    # Create agent (use demo mode if enabled or if API key doesn't work)
+    demo_mode = os.environ.get("DEMO_MODE", "false").lower() == "true"
+    
+    if demo_mode:
+        agent = DemoAgent(tools=tools)
+        logger.info("🎭 Demo mode enabled - using simulated responses")
+    else:
+        try:
+            agent = SalesFlowAgent(tools=tools)
+            logger.info("SalesFlow Agent ready")
+        except Exception as e:
+            logger.warning(f"Failed to initialize LLM agent: {e}")
+            logger.info("🎭 Falling back to demo mode")
+            agent = DemoAgent(tools=tools)
+            demo_mode = True
 
     # Initialize workflow client (optional — degrades gracefully)
     workflow_client = WorkflowClient()
