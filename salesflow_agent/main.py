@@ -3,9 +3,11 @@
 import logging
 import os
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from dotenv import load_dotenv
 from fastapi import FastAPI
+from fastapi.responses import FileResponse
 
 from salesflow_agent.agent.react_agent import SalesFlowAgent
 from salesflow_agent.agent.tools import create_rag_tool
@@ -75,6 +77,16 @@ app = FastAPI(
     version="0.1.0",
     lifespan=lifespan,
 )
+
+
+@app.get("/")
+async def root():
+    """Serve the chat UI."""
+    static_dir = Path(__file__).parent / "static"
+    index_path = static_dir / "index.html"
+    if index_path.exists():
+        return FileResponse(index_path)
+    return {"message": "SalesFlow Agent API", "docs": "/docs"}
 
 
 @app.post("/agent/query", response_model=QueryResponse)
